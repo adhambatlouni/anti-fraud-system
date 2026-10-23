@@ -26,8 +26,8 @@ Its public health endpoint is available at
 [`/actuator/health`](https://anti-fraud-system.onrender.com/actuator/health).
 
 The free Render instance can take approximately one minute to wake after a
-period of inactivity. Production Swagger documentation is intentionally
-disabled, and the API must be used with synthetic card identifiers only.
+period of inactivity. The root URL opens the production Swagger UI, and the
+API must be used with synthetic card identifiers only.
 
 ## What it demonstrates
 
@@ -161,6 +161,10 @@ error pages from exposing messages or stack traces.
 Swagger UI and `/v3/api-docs` are disabled in production unless
 `API_DOCS_ENABLED=true` is explicitly provided. The health endpoint remains
 available without exposing component details.
+
+The portfolio Render deployment explicitly enables API documentation so the
+root service URL can open Swagger UI. Authentication and role authorization
+remain enforced on protected operations.
 
 The repository includes a Render Blueprint for the Dockerized API. Follow the
 [Render and Neon deployment guide](docs/DEPLOYMENT.md) to create the database,
