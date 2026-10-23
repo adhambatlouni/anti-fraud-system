@@ -32,7 +32,7 @@ Do not commit the username, password, or complete connection string.
 | `DB_PASSWORD` | Neon role password |
 
 The Blueprint activates the `prod` profile, binds Spring Boot to Render's
-`PORT`, keeps API documentation disabled, and configures
+`PORT`, enables API documentation for the portfolio demo, and configures
 `/actuator/health` as the health check. Automatic deployments wait for the
 GitHub CI checks on `main` to pass.
 
@@ -53,15 +53,15 @@ Expected response:
 {"status":"UP"}
 ```
 
-Verify that production API documentation is unavailable:
+Verify that the root URL redirects to Swagger UI:
 
 ```powershell
-try {
-    Invoke-WebRequest https://YOUR-SERVICE.onrender.com/v3/api-docs
-} catch {
-    $_.Exception.Response.StatusCode.value__
-}
+Invoke-WebRequest https://YOUR-SERVICE.onrender.com -MaximumRedirection 0
 ```
+
+The response should redirect to `/swagger-ui.html`. Swagger documents the API,
+while Spring Security continues to enforce authentication and role rules on
+each protected operation.
 
 Then run the synthetic workflow from the README: register the administrator,
 merchant, and support accounts; submit transactions; inspect decisions; and
