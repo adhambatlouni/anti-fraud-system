@@ -9,20 +9,26 @@ public final class AuthDtos {
     private AuthDtos() {
     }
 
+    @Schema(description = "Credentials and display name for a new account")
     public record UserRegistrationRequest(
-            @Schema(example = "Demo Merchant")
+            @Schema(description = "Display name", example = "Demo Merchant")
             @NotBlank(message = "name is required") String name,
-            @Schema(example = "merchant")
+            @Schema(description = "Case-insensitive login name", example = "merchant")
             @NotBlank(message = "username is required") String username,
-            @Schema(example = "ChangeMe-123!")
+            @Schema(description = "Account password", example = "ChangeMe-123!", format = "password")
             @NotBlank(message = "password is required") String password
     ) {
     }
 
+    @Schema(description = "Public account details; passwords are never returned")
     public record UserResponse(
-            Long id,
-            String name,
-            String username,
+            @Schema(example = "2") Long id,
+            @Schema(example = "Demo Merchant") String name,
+            @Schema(example = "merchant") String username,
+            @Schema(
+                    allowableValues = {"ADMINISTRATOR", "MERCHANT", "SUPPORT"},
+                    example = "MERCHANT"
+            )
             String role
     ) {
     }
@@ -53,12 +59,13 @@ public final class AuthDtos {
     ) {
     }
 
-    public record UserAccessResponse(String status) {
+    public record UserAccessResponse(
+            @Schema(example = "User merchant unlocked!") String status) {
     }
 
     public record UserDeletionResponse(
-            String username,
-            String status
+            @Schema(example = "merchant") String username,
+            @Schema(example = "Deleted successfully!") String status
     ) {
     }
 }

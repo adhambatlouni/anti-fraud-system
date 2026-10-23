@@ -7,6 +7,8 @@ import com.adham.antifraudsystem.service.TransactionDecisionService;
 import com.adham.antifraudsystem.service.TransactionSearchService;
 import com.adham.antifraudsystem.service.TransactionSearchService.SearchCriteria;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,8 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v2/antifraud/transactions")
 @Tag(
-        name = "Transaction investigation",
-        description = "Privacy-safe transaction search and decision evidence"
+        name = "Investigation"
 )
 @SecurityRequirement(name = OpenApiConfig.BASIC_AUTH)
 public class TransactionSearchController {
@@ -37,20 +38,61 @@ public class TransactionSearchController {
     @GetMapping
     @Operation(
             summary = "Search transaction history",
-            description = "Required role: SUPPORT. Card references are masked."
+            description = "Searches privacy-safe transaction records using optional filters, bounded "
+                    + "pagination, and allow-listed sorting. Card references expose only the last "
+                    + "four digits. **Required role: `SUPPORT`.**"
     )
     public TransactionSearchPage search(
+            @Parameter(
+                    description = "Original fraud decision",
+                    example = "PROHIBITED",
+                    schema = @Schema(
+                            allowableValues = {"ALLOWED", "MANUAL_PROCESSING", "PROHIBITED"}
+                    )
+            )
             @RequestParam(value = "result", required = false) String result,
+            @Parameter(
+                    description = "Transaction region code",
+                    example = "EAP",
+                    schema = @Schema(
+                            allowableValues = {"EAP", "ECA", "HIC", "LAC", "MENA", "SA", "SSA"}
+                    )
+            )
             @RequestParam(value = "region", required = false) String region,
+            @Parameter(
+                    description = "Whether specialist feedback is present",
+                    example = "PENDING",
+                    schema = @Schema(allowableValues = {"PENDING", "REVIEWED"})
+            )
             @RequestParam(value = "feedbackStatus", required = false)
             String feedbackStatus,
+            @Parameter(
+                    description = "Inclusive start using yyyy-MM-dd'T'HH:mm:ss",
+                    example = "2026-10-01T00:00:00"
+            )
             @RequestParam(value = "from", required = false) String from,
+            @Parameter(
+                    description = "Inclusive end using yyyy-MM-dd'T'HH:mm:ss",
+                    example = "2026-10-31T23:59:59"
+            )
             @RequestParam(value = "to", required = false) String to,
+            @Parameter(description = "Last four digits of the synthetic card", example = "3403")
             @RequestParam(value = "cardLast4", required = false)
             String cardLast4,
+            @Parameter(description = "Zero-based page number", example = "0")
             @RequestParam(value = "page", defaultValue = "0") int page,
+            @Parameter(description = "Page size from 1 to 100", example = "20")
             @RequestParam(value = "size", defaultValue = "20") int size,
+            @Parameter(
+                    description = "Sort field: transactionId, amount, date, result, region, or feedback",
+                    example = "date"
+            )
             @RequestParam(value = "sort", defaultValue = "date") String sort,
+            @Parameter(
+                    description = "Sort direction",
+                    example = "desc",
+                    schema = @Schema(allowableValues = {"asc", "desc"})
+            )
             @RequestParam(value = "direction", defaultValue = "desc")
             String direction) {
 
@@ -71,10 +113,12 @@ public class TransactionSearchController {
     @GetMapping("/{transactionId}/decision")
     @Operation(
             summary = "Inspect the original fraud decision",
-            description = "Required role: SUPPORT. Returns the immutable "
-                    + "evidence captured when the transaction was evaluated."
+            description = "Returns the rule version, applied limits, reasons, and correlation counts "
+                    + "captured at evaluation time. Evidence is never recomputed against today's "
+                    + "limits. **Required role: `SUPPORT`.**"
     )
     public TransactionDecisionResponse getDecision(
+            @Parameter(description = "Stored transaction ID", example = "6")
             @PathVariable long transactionId) {
 
         return transactionDecisionService.getDecision(transactionId);
