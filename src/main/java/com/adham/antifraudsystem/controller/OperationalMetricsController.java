@@ -15,8 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v2/antifraud/metrics")
 @Tag(
-        name = "Operational metrics",
-        description = "Aggregated fraud workflow reporting"
+        name = "Operational metrics"
 )
 @SecurityRequirement(name = OpenApiConfig.BASIC_AUTH)
 public class OperationalMetricsController {
@@ -31,8 +30,9 @@ public class OperationalMetricsController {
     @GetMapping
     @Operation(
             summary = "Get fraud operations metrics",
-            description = "Required role: ADMINISTRATOR or SUPPORT. "
-                    + "The reporting window is inclusive and limited to 366 days."
+            description = "Aggregates decisions, review workload, regional activity, and the current "
+                    + "adaptive limits. The reporting window is inclusive and limited to 366 days. "
+                    + "**Required role: `ADMINISTRATOR` or `SUPPORT`.**"
     )
     public OperationalMetricsResponse getMetrics(
             @Parameter(example = "2026-10-01T00:00:00")

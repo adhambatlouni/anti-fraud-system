@@ -22,7 +22,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
-@Tag(name = "Users", description = "Registration and user administration")
+@Tag(name = "Accounts")
 public class AuthenticationController {
 
     private final UserService userService;
@@ -34,7 +34,9 @@ public class AuthenticationController {
     @PostMapping("/user")
     @Operation(
             summary = "Register a user",
-            description = "Public endpoint. The first user becomes the enabled administrator."
+            description = "**Public endpoint.** The first registered user becomes an enabled "
+                    + "`ADMINISTRATOR`. Later users start as locked `MERCHANT` accounts and must "
+                    + "be unlocked by an administrator."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "User registered"),
@@ -53,7 +55,7 @@ public class AuthenticationController {
     @DeleteMapping("/user/{username}")
     @Operation(
             summary = "Delete a user",
-            description = "Required role: ADMINISTRATOR",
+            description = "Permanently removes an application user. **Required role: `ADMINISTRATOR`.**",
             security = @SecurityRequirement(name = OpenApiConfig.BASIC_AUTH)
     )
     public UserDeletionResponse deleteUser(
@@ -64,7 +66,7 @@ public class AuthenticationController {
     @GetMapping("/list")
     @Operation(
             summary = "List users",
-            description = "Required role: ADMINISTRATOR or SUPPORT",
+            description = "Returns users in registration order. **Required role: `ADMINISTRATOR` or `SUPPORT`.**",
             security = @SecurityRequirement(name = OpenApiConfig.BASIC_AUTH)
     )
     public List<UserResponse> getAllUsers() {
@@ -74,7 +76,8 @@ public class AuthenticationController {
     @PutMapping("/access")
     @Operation(
             summary = "Lock or unlock a user",
-            description = "Required role: ADMINISTRATOR",
+            description = "Locked users cannot authenticate. Administrator accounts cannot be locked. "
+                    + "**Required role: `ADMINISTRATOR`.**",
             security = @SecurityRequirement(name = OpenApiConfig.BASIC_AUTH)
     )
     public UserAccessResponse changeUserAccess(
@@ -85,7 +88,8 @@ public class AuthenticationController {
     @PutMapping("/role")
     @Operation(
             summary = "Change a user's role",
-            description = "Required role: ADMINISTRATOR",
+            description = "Assigns either `MERCHANT` or `SUPPORT`. The administrator role cannot be "
+                    + "assigned through this endpoint. **Required role: `ADMINISTRATOR`.**",
             security = @SecurityRequirement(name = OpenApiConfig.BASIC_AUTH)
     )
     public UserResponse changeUserRole(

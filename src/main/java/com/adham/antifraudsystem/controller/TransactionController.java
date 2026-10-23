@@ -26,7 +26,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/antifraud")
-@Tag(name = "Transactions", description = "Risk evaluation, history, and specialist feedback")
 @SecurityRequirement(name = OpenApiConfig.BASIC_AUTH)
 public class TransactionController {
 
@@ -46,8 +45,11 @@ public class TransactionController {
 
     @PostMapping("/transaction")
     @Operation(
+            tags = "Transaction evaluation",
             summary = "Evaluate a transaction",
-            description = "Required role: MERCHANT"
+            description = "Evaluates amount, blacklist, IP-correlation, and region-correlation rules. "
+                    + "The response contains the highest-severity decision and its alphabetically "
+                    + "ordered reasons. Every valid attempt is stored. **Required role: `MERCHANT`.**"
     )
     public TransactionResponse processTransaction(
             @Valid @RequestBody TransactionRequest request) {
@@ -56,8 +58,11 @@ public class TransactionController {
 
     @PutMapping("/transaction")
     @Operation(
+            tags = "Transaction review",
             summary = "Submit transaction feedback",
-            description = "Required role: SUPPORT. Feedback can be submitted once per transaction."
+            description = "Records a specialist's final assessment and updates the adaptive amount "
+                    + "limits when applicable. Feedback can be submitted once, and it cannot equal "
+                    + "the original result. **Required role: `SUPPORT`.**"
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Feedback recorded and limits updated"),
@@ -87,8 +92,10 @@ public class TransactionController {
 
     @GetMapping("/history")
     @Operation(
+            tags = "Transaction review",
             summary = "List transaction history",
-            description = "Required role: SUPPORT"
+            description = "Returns every stored transaction in ascending ID order, including its "
+                    + "immutable original result and any later feedback. **Required role: `SUPPORT`.**"
     )
     public List<TransactionHistoryResponse> getAllHistory() {
         return transactionHistoryService.getAllHistory();
@@ -96,10 +103,13 @@ public class TransactionController {
 
     @GetMapping("/history/{number}")
     @Operation(
+            tags = "Transaction review",
             summary = "Get history for a card",
-            description = "Required role: SUPPORT"
+            description = "Returns stored transactions for one valid synthetic card number in "
+                    + "ascending ID order. **Required role: `SUPPORT`.**"
     )
     public List<TransactionHistoryResponse> getHistoryByCard(
+            @Parameter(description = "Synthetic card number", example = "4000008449433403")
             @PathVariable String number) {
 
         return transactionHistoryService.getHistoryByCard(number);

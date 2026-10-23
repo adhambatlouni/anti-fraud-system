@@ -13,40 +13,58 @@ public final class TransactionDtos {
     private TransactionDtos() {
     }
 
+    @Schema(description = "Synthetic transaction submitted for fraud evaluation")
     public record TransactionRequest(
-            @Schema(example = "800")
+            @Schema(description = "Transaction amount in whole units", example = "800")
             @NotNull(message = "amount is required")
             @Positive(message = "amount must be positive")
             Long amount,
-            @Schema(example = "192.168.1.1")
+            @Schema(description = "Source IPv4 address", example = "192.168.1.10")
             @NotBlank(message = "ip is required") String ip,
             @Schema(
                     description = "Synthetic 16-digit card number",
                     example = "4000008449433403"
             )
             @NotBlank(message = "number is required") String number,
-            @Schema(example = "EAP")
+            @Schema(
+                    description = "Transaction region code",
+                    allowableValues = {"EAP", "ECA", "HIC", "LAC", "MENA", "SA", "SSA"},
+                    example = "EAP"
+            )
             @NotBlank(message = "region is required") String region,
-            @Schema(example = "2026-10-20T12:00:00")
+            @Schema(
+                    description = "Local transaction time using yyyy-MM-dd'T'HH:mm:ss",
+                    example = "2026-10-20T12:00:00"
+            )
             @NotBlank(message = "date is required") String date
     ) {
     }
 
+    @Schema(description = "Fraud decision and the rules responsible for it")
     public record TransactionResponse(
+            @Schema(
+                    allowableValues = {"ALLOWED", "MANUAL_PROCESSING", "PROHIBITED"},
+                    example = "MANUAL_PROCESSING"
+            )
             String result,
+            @Schema(
+                    description = "Alphabetically ordered reasons, or none",
+                    example = "amount, ip-correlation"
+            )
             String info
     ) {
     }
 
+    @Schema(description = "Stored transaction with its original decision and later specialist feedback")
     public record TransactionHistoryResponse(
-            Long transactionId,
-            Long amount,
-            String ip,
-            String number,
-            String region,
-            String date,
-            String result,
-            String feedback
+            @Schema(example = "2") Long transactionId,
+            @Schema(example = "800") Long amount,
+            @Schema(example = "192.168.1.10") String ip,
+            @Schema(description = "Synthetic card number", example = "4000008449433403") String number,
+            @Schema(example = "EAP") String region,
+            @Schema(example = "2026-10-20T12:00:00") String date,
+            @Schema(example = "MANUAL_PROCESSING") String result,
+            @Schema(description = "Empty until reviewed", example = "ALLOWED") String feedback
     ) {
     }
 
@@ -81,6 +99,7 @@ public final class TransactionDtos {
     ) {
     }
 
+    @Schema(description = "One bounded page of privacy-safe transaction results")
     public record TransactionSearchPage(
             List<TransactionSearchItem> content,
             int page,
@@ -90,6 +109,7 @@ public final class TransactionDtos {
     ) {
     }
 
+    @Schema(description = "Aggregated fraud operations report for an inclusive time window")
     public record OperationalMetricsResponse(
             String from,
             String to,
@@ -126,6 +146,7 @@ public final class TransactionDtos {
     ) {
     }
 
+    @Schema(description = "Immutable fraud-rule evidence captured during the original evaluation")
     public record TransactionDecisionResponse(
             long transactionId,
             long amount,
