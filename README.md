@@ -149,6 +149,10 @@ Swagger UI and `/v3/api-docs` are disabled in production unless
 `API_DOCS_ENABLED=true` is explicitly provided. The health endpoint remains
 available without exposing component details.
 
+The repository includes a Render Blueprint for the Dockerized API. Follow the
+[Render and Neon deployment guide](docs/DEPLOYMENT.md) to create the database,
+provide secrets, deploy, and verify the public service.
+
 ## Synthetic demo workflow
 
 Swagger UI provides an **Authorize** button for HTTP Basic credentials.

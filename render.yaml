@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: anti-fraud-system
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: API_DOCS_ENABLED
+        value: "false"
+      - key: DB_POOL_MAX_SIZE
+        value: "5"
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
