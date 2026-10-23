@@ -1,5 +1,7 @@
 # Anti-Fraud System
 
+[![CI](https://github.com/adhambatlouni/anti-fraud-system/actions/workflows/ci.yml/badge.svg)](https://github.com/adhambatlouni/anti-fraud-system/actions/workflows/ci.yml)
+
 A rule-based Spring Boot API that evaluates payment risk, maintains fraud
 blacklists, records transaction history, and adjusts amount thresholds from
 specialist feedback.
@@ -15,6 +17,17 @@ workflows, transaction boundaries, and recommended code-reading order.
 > This project is designed for synthetic data. It stores and returns the
 > 16-digit card identifiers required by the exercise and is not a PCI-compliant
 > payment system. Never submit real card numbers.
+
+## Live demo
+
+The production API is deployed at
+[anti-fraud-system.onrender.com](https://anti-fraud-system.onrender.com).
+Its public health endpoint is available at
+[`/actuator/health`](https://anti-fraud-system.onrender.com/actuator/health).
+
+The free Render instance can take approximately one minute to wake after a
+period of inactivity. Production Swagger documentation is intentionally
+disabled, and the API must be used with synthetic card identifiers only.
 
 ## What it demonstrates
 
