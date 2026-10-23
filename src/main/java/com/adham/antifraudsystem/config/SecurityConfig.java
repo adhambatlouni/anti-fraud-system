@@ -40,6 +40,10 @@ public class SecurityConfig {
                         .dispatcherTypeMatchers(DispatcherType.ERROR)
                         .permitAll()
 
+                        // Public service information
+                        .requestMatchers(HttpMethod.GET, "/")
+                        .permitAll()
+
                         // Public registration
                         .requestMatchers(
                                 HttpMethod.POST,
