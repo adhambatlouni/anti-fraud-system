@@ -75,7 +75,7 @@ public class SwaggerUiResourceTransformer
             }
 
             %1$s .response-col_description__inner > .renderedMarkdown p {
-                font-size: 16px;
+                font-size: 15px;
                 font-weight: 600;
                 margin: 0 0 10px;
             }
@@ -87,7 +87,7 @@ public class SwaggerUiResourceTransformer
 
             %1$s .highlight-code pre {
                 border-radius: 6px;
-                font-size: 15px;
+                font-size: 14px;
                 line-height: 1.5;
                 max-height: none;
                 padding: 18px;

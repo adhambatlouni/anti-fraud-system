@@ -141,7 +141,7 @@ class ApiContractIntegrationTest {
                         "#operations-Investigation-search"
                 )))
                 .andExpect(content().string(containsString(
-                        "font-size: 15px"
+                        "font-size: 14px"
                 )));
     }
 
