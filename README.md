@@ -264,50 +264,24 @@ Basic authentication because it suits the current backend and Swagger workflow.
 
 ## API reference
 
-| Method | Endpoint | Access | Purpose |
-|---|---|---|---|
-| `POST` | `/api/auth/user` | Public | Register an account |
-| `GET` | `/api/auth/list` | Admin, Support | List users |
-| `DELETE` | `/api/auth/user/{username}` | Admin | Delete a user |
-| `PUT` | `/api/auth/role` | Admin | Change a user role |
-| `PUT` | `/api/auth/access` | Admin | Lock or unlock a user |
-| `POST` | `/api/antifraud/transaction` | Merchant | Evaluate and store a transaction |
-| `PUT` | `/api/antifraud/transaction` | Support | Submit one-time feedback |
-| `GET` | `/api/antifraud/history` | Support | Read all transaction history |
-| `GET` | `/api/antifraud/history/{number}` | Support | Read history for one card |
-| `GET` | `/api/v2/antifraud/transactions` | Support | Search masked transaction history |
-| `GET` | `/api/v2/antifraud/transactions/{id}/decision` | Support | Inspect original decision evidence |
-| `GET` | `/api/v2/antifraud/metrics` | Admin, Support | Read aggregate operational metrics |
-| `GET` | `/api/antifraud/audit` | Admin, Support | Read recent audit events |
-| `POST` | `/api/antifraud/suspicious-ip` | Support | Add a suspicious IP |
-| `GET` | `/api/antifraud/suspicious-ip` | Support | List suspicious IPs |
-| `DELETE` | `/api/antifraud/suspicious-ip/{ip}` | Support | Remove a suspicious IP |
-| `POST` | `/api/antifraud/stolencard` | Support | Flag a synthetic card identifier |
-| `GET` | `/api/antifraud/stolencard` | Support | List flagged card identifiers |
-| `DELETE` | `/api/antifraud/stolencard/{number}` | Support | Remove a flagged card identifier |
+The live [Swagger UI](https://anti-fraud-system.onrender.com/) is the complete,
+executable API reference. The main route groups are:
 
-Validation and domain errors use `application/problem+json` with stable status
-semantics:
+| Area | Routes | Access |
+|---|---|---|
+| Accounts | `/api/auth/**` | Public registration; admin and support management |
+| Evaluation and review | `/api/antifraud/transaction`, `/api/antifraud/history/**` | Merchant submission; support review |
+| Fraud signals | `/api/antifraud/suspicious-ip/**`, `/api/antifraud/stolencard/**` | Support |
+| Investigation | `/api/v2/antifraud/transactions/**` | Support |
+| Operations | `/api/v2/antifraud/metrics`, `/api/antifraud/audit` | Administrator, Support |
 
-| Status | Meaning |
-|---:|---|
-| `400` | Malformed or invalid request |
-| `401` | Missing, invalid, or locked credentials |
-| `403` | Authenticated caller lacks the required role |
-| `404` | Resource not found |
-| `409` | Duplicate resource or repeated feedback |
-| `422` | Feedback matches the original decision |
+Validation and domain failures use `application/problem+json` and distinguish
+`400`, `401`, `403`, `404`, `409`, and `422` responses.
 
 ## Quick start
 
-The Docker Compose stack starts the API and PostgreSQL on a private network,
-waits for database readiness, applies Flyway migrations, and exposes both
-services only on the local interface.
-
-### Prerequisites
-
-- Git
-- Docker Desktop with Docker Compose
+With Git and Docker Desktop installed, the Compose stack starts the API and
+PostgreSQL, waits for database readiness, and applies Flyway migrations.
 
 ### 1. Clone and configure
 
@@ -316,20 +290,12 @@ git clone https://github.com/adhambatlouni/anti-fraud-system.git
 cd anti-fraud-system
 ```
 
-PowerShell:
-
 ```powershell
 Copy-Item .env.example .env
 ```
 
-macOS, Linux, or Git Bash:
-
-```bash
-cp .env.example .env
-```
-
-The defaults are intended only for local development. Change
-`POSTGRES_PASSWORD` before using the stack in a shared environment.
+Use `cp .env.example .env` on macOS, Linux, or Git Bash. The defaults are for
+local development; change `POSTGRES_PASSWORD` in shared environments.
 
 ### 2. Start the stack
 
@@ -344,7 +310,7 @@ Once the application is healthy:
 - **Swagger UI:** [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 - **OpenAPI JSON:** [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
 - **Health:** [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
-- **PostgreSQL:** `localhost:5432`, available for optional inspection
+- **PostgreSQL:** `localhost:5432`
 
 ### 3. Stop the stack
 
@@ -352,12 +318,9 @@ Once the application is healthy:
 docker compose down
 ```
 
-The named volume preserves users, transactions, feedback, limits, and audit
-events. To deliberately remove the Docker-managed data:
-
-```bash
-docker compose down --volumes
-```
+The named volume preserves data between container recreations. Use
+`docker compose down --volumes` only when you intentionally want a clean local
+database.
 
 ## Database migrations
 
@@ -395,13 +358,10 @@ macOS or Linux:
 
 The suite covers:
 
-- IPv4, Luhn, date, region, and request validation;
-- amount rules, severity precedence, and sorted explanations;
-- same-card isolation and one-hour IP/region correlation boundaries;
-- feedback formulas, invalid transitions, exactly-once updates, and row locking;
-- concurrent first-user registration and administrator uniqueness;
-- authentication, locked accounts, role authorization, and error contracts;
-- Flyway migrations, audit redaction, transaction search, metrics, and decision snapshots.
+- validation, amount rules, severity precedence, and sorted explanations;
+- same-card isolation and one-hour correlation boundaries;
+- feedback transitions, row locking, and concurrent administrator registration;
+- security, errors, Flyway, audit redaction, investigation APIs, and snapshots.
 
 GitHub Actions runs `./gradlew clean check bootJar --no-daemon --stacktrace`
 for pull requests targeting `main` and pushes to `main`. The workflow uses Java
@@ -423,44 +383,9 @@ superseded runs on the same ref.
 | **PostgreSQL-backed integration tests** | Tests exercise the same locking, constraints, migrations, and SQL semantics used in deployment |
 | **Health-aware container startup** | The API waits for PostgreSQL readiness rather than relying on startup timing |
 
-The project evolved from the six-stage Hyperskill Anti-Fraud System. The
-portfolio version preserves the original fraud contract while adding explicit
-persistence boundaries, PostgreSQL, Flyway, concurrency coverage, explainable
-decisions, audit history, operational reads, containers, CI, and deployment.
-
-<details>
-<summary><strong>Run Spring Boot directly</strong></summary>
-
-### Local prerequisites
-
-- JDK 25
-- PostgreSQL 18
-- Docker Desktop when running integration tests
-
-Set the local database connection, then start the application:
-
-```powershell
-$env:SPRING_PROFILES_ACTIVE = "local"
-$env:DB_URL = "jdbc:postgresql://localhost:5432/antifraud"
-$env:DB_USERNAME = "antifraud"
-$env:DB_PASSWORD = "your-local-password"
-.\gradlew.bat bootRun
-```
-
-| Variable | Required | Default | Purpose |
-|---|---:|---|---|
-| `DB_URL` | No | `jdbc:postgresql://localhost:5432/antifraud` | JDBC connection URL |
-| `DB_USERNAME` | No | `antifraud` | PostgreSQL application role |
-| `DB_PASSWORD` | No | `antifraud` | Local PostgreSQL credential |
-| `PORT` | No | `8080` | HTTP port |
-| `DB_POOL_MAX_SIZE` | No | `5` | Maximum HikariCP pool size |
-| `API_DOCS_ENABLED` | Production only | `false` | Enables OpenAPI and Swagger UI |
-
-Flyway creates or upgrades the schema during startup. Spring Boot does not load
-`.env` automatically when launched directly; add the same values to the
-IntelliJ run configuration when using the IDE.
-
-</details>
+The project evolved from the six-stage Hyperskill Anti-Fraud System into a
+deployed backend with explicit persistence boundaries, explainable decisions,
+concurrency coverage, operational reads, containers, and CI.
 
 ## Deployment
 
