@@ -55,9 +55,17 @@ public class SwaggerUiResourceTransformer
                 margin-bottom: 20px;
             }
 
+            %1$s .responses-wrapper .opblock-section-header h4 {
+                font-size: 16px;
+            }
+
+            %1$s .responses-table thead th {
+                font-size: 14px;
+            }
+
             %1$s .response-col_status {
                 color: #3b4151;
-                font-size: 14px;
+                font-size: 16px;
                 font-weight: 600;
                 white-space: nowrap;
             }
@@ -67,6 +75,7 @@ public class SwaggerUiResourceTransformer
             }
 
             %1$s .response-col_description__inner > .renderedMarkdown p {
+                font-size: 18px;
                 font-weight: 600;
                 margin: 0 0 10px;
             }
@@ -78,6 +87,8 @@ public class SwaggerUiResourceTransformer
 
             %1$s .highlight-code pre {
                 border-radius: 6px;
+                font-size: 18px;
+                line-height: 1.45;
                 max-height: none;
                 padding: 18px;
             }
