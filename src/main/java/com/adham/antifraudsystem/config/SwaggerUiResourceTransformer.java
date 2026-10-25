@@ -22,17 +22,15 @@ public class SwaggerUiResourceTransformer
 
     private static final String DECISION_SHOWCASE_CSS = """
 
-            /* Compact presentation for the decision-inspection showcase. */
-            %1$s .opblock-description-wrapper,
-            %1$s .parameters-container,
-            %1$s .opblock-section-header,
+            /* Focused presentation for the decision-inspection showcase. */
             %1$s .try-out,
             %1$s .execute-wrapper,
-            %1$s .responses-wrapper > .opblock-section-header,
             %1$s .responses-inner > h4,
             %1$s .responses-inner > h5,
-            %1$s .responses-table thead,
-            %1$s .response-col_description__inner > .renderedMarkdown,
+            %1$s .curl-command,
+            %1$s .request-url,
+            %1$s .response-headers,
+            %1$s .response-headers > h4,
             %1$s .response-controls,
             %1$s .model-example > .tab,
             %1$s .example,
@@ -40,35 +38,36 @@ public class SwaggerUiResourceTransformer
                 display: none;
             }
 
-            %1$s .responses-wrapper,
-            %1$s .responses-inner,
-            %1$s .responses-table,
-            %1$s .response-col_description,
-            %1$s .model-example,
-            %1$s .highlight-code {
-                margin: 0;
-                padding-top: 0;
+            %1$s .opblock-description-wrapper,
+            %1$s .parameters-container,
+            %1$s .responses-wrapper {
+                margin-left: 20px;
+                margin-right: 20px;
             }
 
             %1$s .responses-table {
-                border-collapse: separate;
-                border-spacing: 0 12px;
+                margin-bottom: 20px;
             }
 
             %1$s .response-col_status {
-                color: #1b5e20;
-                font-size: 17px;
-                font-weight: 700;
-                padding: 14px 12px 0 0;
+                color: #3b4151;
+                font-size: 14px;
+                font-weight: 600;
                 white-space: nowrap;
-            }
-
-            %1$s .response-col_status::after {
-                content: " OK";
             }
 
             %1$s .response-col_description {
                 width: 100%%;
+            }
+
+            %1$s .response-col_description__inner > .renderedMarkdown p {
+                font-weight: 600;
+                margin: 0 0 10px;
+            }
+
+            %1$s .model-example,
+            %1$s .highlight-code {
+                margin: 0;
             }
 
             %1$s .highlight-code pre {
