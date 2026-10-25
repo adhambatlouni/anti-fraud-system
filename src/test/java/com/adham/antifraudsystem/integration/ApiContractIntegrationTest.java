@@ -136,6 +136,9 @@ class ApiContractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString(
                         "#operations-Investigation-inspectOriginalFraudDecision"
+                )))
+                .andExpect(content().string(containsString(
+                        "#operations-Investigation-search"
                 )));
     }
 

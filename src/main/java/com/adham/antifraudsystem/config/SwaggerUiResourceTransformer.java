@@ -19,10 +19,16 @@ public class SwaggerUiResourceTransformer
     private static final String SWAGGER_CSS = "swagger-ui.css";
     private static final String DECISION_OPERATION =
             "#operations-Investigation-inspectOriginalFraudDecision";
+    private static final String TRANSACTION_SEARCH_OPERATION =
+            "#operations-Investigation-search";
 
     private static final String DECISION_SHOWCASE_CSS = """
 
             /* Focused presentation for the decision-inspection showcase. */
+            %2$s {
+                display: none;
+            }
+
             %1$s .try-out,
             %1$s .execute-wrapper,
             %1$s .responses-inner > h4,
@@ -75,7 +81,10 @@ public class SwaggerUiResourceTransformer
                 max-height: none;
                 padding: 18px;
             }
-            """.formatted(DECISION_OPERATION);
+            """.formatted(
+                    DECISION_OPERATION,
+                    TRANSACTION_SEARCH_OPERATION
+            );
 
     public SwaggerUiResourceTransformer(
             SwaggerUiConfigProperties swaggerUiConfig,
