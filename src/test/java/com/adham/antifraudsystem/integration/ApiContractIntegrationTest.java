@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -111,10 +112,27 @@ class ApiContractIntegrationTest {
                 ).exists())
                 .andExpect(jsonPath(
                         "$['paths']['/api/auth/user']['post']['responses']['201']"
-                ).exists());
+                ).exists())
+                .andExpect(jsonPath(
+                        "$['paths']['/api/v2/antifraud/transactions/{transactionId}/decision']"
+                                + "['get']['operationId']"
+                ).value("inspectOriginalFraudDecision"))
+                .andExpect(jsonPath(
+                        "$['paths']['/api/v2/antifraud/transactions/{transactionId}/decision']"
+                                + "['get']['responses']['200']['content']"
+                                + "['application/json']['examples']"
+                                + "['Correlation-based prohibition']['value']"
+                                + "['reasons'][0]"
+                ).value("ip-correlation"));
 
         mockMvc.perform(get("/swagger-ui.html"))
                 .andExpect(status().is3xxRedirection());
+
+        mockMvc.perform(get("/swagger-ui/swagger-ui.css"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(
+                        "#operations-Investigation-inspectOriginalFraudDecision"
+                )));
     }
 
     @Test
