@@ -23,6 +23,8 @@ public class SwaggerUiResourceTransformer
     private static final String DECISION_SHOWCASE_CSS = """
 
             /* Focused presentation for the decision-inspection showcase. */
+            %1$s .try-out,
+            %1$s .execute-wrapper,
             %1$s .responses-inner > h4,
             %1$s .responses-inner > h5,
             %1$s .curl-command,
