@@ -8,13 +8,9 @@ import com.adham.antifraudsystem.service.TransactionSearchService;
 import com.adham.antifraudsystem.service.TransactionSearchService.SearchCriteria;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -116,49 +112,13 @@ public class TransactionSearchController {
 
     @GetMapping("/{transactionId}/decision")
     @Operation(
-            operationId = "inspectOriginalFraudDecision",
             summary = "Inspect the original fraud decision",
             description = "Returns the rule version, applied limits, reasons, and correlation counts "
                     + "captured at evaluation time. Evidence is never recomputed against today's "
                     + "limits. **Required role: `SUPPORT`.**"
     )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Response body",
-            content = @Content(
-                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                    schema = @Schema(
-                            implementation = TransactionDecisionResponse.class
-                    ),
-                    examples = @ExampleObject(
-                            name = "Amount-based manual review",
-                            value = """
-                                    {
-                                      "transactionId": 7,
-                                      "amount": 800,
-                                      "result": "MANUAL_PROCESSING",
-                                      "evidenceAvailable": true,
-                                      "reasons": [
-                                        "amount"
-                                      ],
-                                      "appliedLimits": {
-                                        "maxAllowed": 320,
-                                        "maxManual": 1500
-                                      },
-                                      "signals": {
-                                        "suspiciousIp": false,
-                                        "stolenCard": false,
-                                        "differentIpCount": 0,
-                                        "differentRegionCount": 0
-                                      },
-                                      "ruleVersion": "1.0"
-                                    }
-                                    """
-                    )
-            )
-    )
     public TransactionDecisionResponse getDecision(
-            @Parameter(description = "Stored transaction ID", example = "7")
+            @Parameter(description = "Stored transaction ID", example = "6")
             @PathVariable long transactionId) {
 
         return transactionDecisionService.getDecision(transactionId);

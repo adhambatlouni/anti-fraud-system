@@ -19,7 +19,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -112,46 +111,10 @@ class ApiContractIntegrationTest {
                 ).exists())
                 .andExpect(jsonPath(
                         "$['paths']['/api/auth/user']['post']['responses']['201']"
-                ).exists())
-                .andExpect(jsonPath(
-                        "$['paths']['/api/v2/antifraud/transactions/{transactionId}/decision']"
-                                + "['get']['operationId']"
-                ).value("inspectOriginalFraudDecision"))
-                .andExpect(jsonPath(
-                        "$['paths']['/api/v2/antifraud/transactions/{transactionId}/decision']"
-                                + "['get']['responses']['200']['content']"
-                                + "['application/json']['examples']"
-                                + "['Amount-based manual review']['value']"
-                                + "['reasons'][0]"
-                ).value("amount"))
-                .andExpect(jsonPath(
-                        "$['paths']['/api/v2/antifraud/transactions/{transactionId}/decision']"
-                                + "['get']['responses']['200']['description']"
-                ).value("Response body"));
+                ).exists());
 
         mockMvc.perform(get("/swagger-ui.html"))
                 .andExpect(status().is3xxRedirection());
-
-        mockMvc.perform(get("/swagger-ui/swagger-ui.css"))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString(
-                        "#operations-Investigation-inspectOriginalFraudDecision"
-                )))
-                .andExpect(content().string(containsString(
-                        "#operations-Investigation-search"
-                )))
-                .andExpect(content().string(containsString(
-                        "font-size: 14px"
-                )))
-                .andExpect(content().string(containsString(
-                        ".opblock-description-wrapper p"
-                )))
-                .andExpect(content().string(containsString(
-                        "#operations-tag-Investigation small"
-                )))
-                .andExpect(content().string(containsString(
-                        ".opblock-summary-description"
-                )));
     }
 
     @Test
