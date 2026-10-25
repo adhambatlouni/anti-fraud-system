@@ -1,225 +1,272 @@
+<!--suppress HtmlDeprecatedAttribute -->
+<div align="center">
+
 # Anti-Fraud System
 
+**An explainable Spring Boot fraud decision API with deterministic risk rules, adaptive thresholds, auditable operations, PostgreSQL concurrency controls, and container-backed verification.**
+
 [![CI](https://github.com/adhambatlouni/anti-fraud-system/actions/workflows/ci.yml/badge.svg)](https://github.com/adhambatlouni/anti-fraud-system/actions/workflows/ci.yml)
+[![Live API](https://img.shields.io/badge/Live_API-Explore_in_Swagger-85EA2D?logo=swagger&logoColor=black)](https://anti-fraud-system.onrender.com/)
 [![Release](https://img.shields.io/github/v/release/adhambatlouni/anti-fraud-system)](https://github.com/adhambatlouni/anti-fraud-system/releases/latest)
+![Java](https://img.shields.io/badge/Java-25-ED8B00?logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1.1-6DB33F?logo=springboot&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 
-A rule-based Spring Boot API that evaluates payment risk, maintains fraud
-blacklists, records transaction history, and adjusts amount thresholds from
-specialist feedback.
+[Live API](#live-api) · [Architecture](#architecture) · [Decision model](#decision-model) · [Demo](#try-the-fraud-workflow) · [API](#api-reference) · [Testing](#testing-and-ci) · [Decisions](#engineering-decisions)
 
-The project began as the six-stage Hyperskill Anti-Fraud System and has been
-rebuilt as a deployed, production-oriented backend portfolio project. It keeps
-explicit SQL and `JdbcTemplate` instead of replacing the persistence layer with
-JPA.
+</div>
 
-Start with the [architecture guide](docs/ARCHITECTURE.md) for the business
-workflows, transaction boundaries, and recommended code-reading order.
+---
 
-> This project is designed for synthetic data. It stores and returns the
-> 16-digit card identifiers required by the exercise and is not a PCI-compliant
-> payment system. Never submit real card numbers.
+Anti-Fraud System is a Spring Boot REST API that evaluates synthetic payment
+transactions, correlates recent card activity, manages fraud signals, and
+supports specialist review. Each valid attempt receives one of three decisions:
+`ALLOWED`, `MANUAL_PROCESSING`, or `PROHIBITED`.
 
-## Live demo
+The application preserves the evidence behind every decision, applies
+specialist feedback exactly once, updates shared amount thresholds safely, and
+records sensitive operational changes in an append-only audit trail. It uses
+explicit Spring JDBC repositories so the SQL, locking strategy, and database
+boundaries remain visible.
 
-The production API is deployed on Render:
+> This project accepts synthetic card identifiers for demonstration purposes.
+> It is not a PCI-compliant payment system and must never receive real card
+> numbers.
 
-- [Live API and Swagger UI](https://anti-fraud-system.onrender.com/)
-- [Health check](https://anti-fraud-system.onrender.com/actuator/health)
+## Live API
 
-The free Render instance can take approximately one minute to wake after a
-period of inactivity. The API must be used with synthetic card identifiers
-only.
+The public deployment runs the Dockerized Java application on Render and stores
+its state in a persistent Neon PostgreSQL database.
 
-## What it demonstrates
+- **Interactive API:** [Open the live API and Swagger UI](https://anti-fraud-system.onrender.com/)
+- **Machine-readable contract:** [OpenAPI JSON](https://anti-fraud-system.onrender.com/v3/api-docs)
+- **Service readiness:** [Health endpoint](https://anti-fraud-system.onrender.com/actuator/health)
 
-- Java 25 and Spring Boot 4
-- Role-based HTTP Basic authentication with BCrypt
-- Explicit PostgreSQL queries through Spring JDBC
-- Versioned PostgreSQL 18 schema migrations with Flyway
-- Deterministic fraud rules and adaptive feedback thresholds
-- Transactional row locking for exactly-once feedback
-- Append-only, actor-attributed fraud operations audit events
-- Bounded, filterable transaction investigation with masked card references
-- Date-bounded operational metrics without card or IP data
-- Immutable fraud decision evidence with rule-version snapshots
-- Jakarta Bean Validation and `application/problem+json` errors
-- JUnit 5, MockMvc, Spring Security tests, and Testcontainers
-- Docker Compose, container health checks, and GitHub Actions
-- OpenAPI 3 documentation and Swagger UI
+The service root redirects to Swagger UI. Protected operations still require
+the appropriate HTTP Basic credentials and role. The free Render instance may
+take about one minute to answer its first request after a period of inactivity.
 
-## How a transaction is evaluated
+## Engineering at a glance
+
+| Area | Implementation |
+|---|---|
+| **Decisioning** | Deterministic severity precedence with sorted, highest-severity reasons |
+| **Correlation** | Distinct IP and region activity for the same card inside an inclusive one-hour window |
+| **Explainability** | Immutable snapshots of applied limits, rule version, reasons, and correlation signals |
+| **Adaptive feedback** | One-time specialist feedback recalculates future amount thresholds with exact decimal arithmetic |
+| **Concurrency** | PostgreSQL row and table locking serialize feedback, limit updates, and first-user registration |
+| **Auditability** | Append-only, actor-attributed events for blacklist, feedback, and limit operations |
+| **Persistence** | PostgreSQL 18, Spring JDBC repositories, explicit SQL, constraints, triggers, and Flyway migrations |
+| **Security** | Stateless Spring Security, BCrypt, locked-account handling, and role-specific routes |
+| **API contract** | OpenAPI, Swagger UI, Bean Validation, RFC 9457 Problem Details, bounded search, controlled sorting |
+| **Verification** | JUnit 5, MockMvc, Spring Security tests, Testcontainers, PostgreSQL, and Flyway |
+| **Delivery** | Multi-stage non-root image, health-aware Docker Compose, Render Blueprint, Neon, and GitHub Actions |
+
+## Architecture
 
 ```mermaid
 flowchart LR
-    A[Merchant submits transaction] --> B[Validate request]
-    B --> C[Read current amount limits]
-    C --> D[Check IP and card blacklists]
-    D --> E[Count other IPs and regions in previous hour]
-    E --> F[Fraud decision engine]
-    F --> G[Store original decision]
-    G --> H[Return result and reasons]
+    Client[API client / Swagger UI]
+
+    subgraph Application[Spring Boot application]
+        Security[Spring Security filter chain]
+        Controllers[REST controllers]
+        Workflows[Transactional command services]
+        Engine[Fraud decision engine]
+        Reads[Investigation read services]
+        Repositories[JDBC repositories]
+        Errors[Problem Details handler]
+    end
+
+    subgraph Persistence[Persistence]
+        JDBC[JdbcTemplate SQL]
+        Flyway[Flyway migrations]
+        PostgreSQL[(PostgreSQL 18)]
+    end
+
+    Client --> Security
+    Security --> Controllers
+    Controllers --> Workflows
+    Controllers --> Reads
+    Workflows --> Engine
+    Workflows --> Repositories
+    Reads --> JDBC
+    Repositories --> JDBC
+    JDBC --> PostgreSQL
+    Flyway --> PostgreSQL
+    Controllers -. exceptions .-> Errors
+    Errors -. application/problem+json .-> Client
 ```
 
-The default amount thresholds are stored in PostgreSQL:
+Controllers define the HTTP boundary. Transactional services coordinate fraud
+workflows and policy, while repositories own reusable persistence and row
+locking. Specialized search, metrics, and decision-inspection queries remain in
+focused read services because their SQL directly defines their API projections.
 
-| Amount | Initial result |
+The [architecture guide](docs/ARCHITECTURE.md) explains the workflows,
+transaction boundaries, persistence choices, and recommended code-reading
+order in more detail.
+
+## Decision model
+
+A merchant submits an amount, IPv4 address, synthetic card identifier, region,
+and timestamp. The evaluation workflow validates the request before reading or
+writing fraud data.
+
+```mermaid
+flowchart LR
+    Request[Merchant transaction] --> Validate[Validate request]
+    Validate --> Limits[Read active limits]
+    Limits --> Blacklists[Check IP and card signals]
+    Blacklists --> Correlation[Count distinct IPs and regions]
+    Correlation --> Engine[Apply severity rules]
+    Engine --> Snapshot[Store transaction and evidence]
+    Snapshot --> Response[Return decision and reasons]
+```
+
+The initial amount thresholds are persisted in PostgreSQL:
+
+| Amount | Initial decision |
 |---:|---|
-| `1`–`200` | `ALLOWED` |
-| `201`–`1500` | `MANUAL_PROCESSING` |
+| `1` to `200` | `ALLOWED` |
+| `201` to `1500` | `MANUAL_PROCESSING` |
 | Greater than `1500` | `PROHIBITED` |
 
-Other fraud signals can raise the severity:
+Other signals can raise the decision severity:
 
-- A blacklisted IP or stolen card produces `PROHIBITED`.
-- Exactly two other IPs or regions used by the same card during the previous
-  hour produces `MANUAL_PROCESSING`.
-- More than two other IPs or regions produces `PROHIBITED`.
-- The response reports only reasons belonging to the final severity, sorted
-  alphabetically.
-
-Every valid attempt is stored, including prohibited transactions. The original
-decision is immutable.
-
-## Roles
-
-| Role | Responsibilities |
+| Signal | Decision impact |
 |---|---|
-| `ADMINISTRATOR` | List users, change roles, lock/unlock accounts, delete users |
-| `MERCHANT` | Submit transactions for evaluation |
-| `SUPPORT` | Manage blacklists, inspect history, and submit feedback |
+| IP appears in the suspicious-IP blacklist | `PROHIBITED` |
+| Card appears in the stolen-card blacklist | `PROHIBITED` |
+| Exactly two other IPs for the same card in the previous hour | `MANUAL_PROCESSING` |
+| More than two other IPs for the same card in the previous hour | `PROHIBITED` |
+| Exactly two other regions for the same card in the previous hour | `MANUAL_PROCESSING` |
+| More than two other regions for the same card in the previous hour | `PROHIBITED` |
 
-The first registered account becomes an enabled administrator. Later accounts
-start as locked merchants until an administrator assigns the required role and
-unlocks them.
+Prohibited signals take precedence over manual-review signals. The response
+contains only reasons belonging to the final severity, sorted alphabetically.
+Every valid attempt is stored, including prohibited transactions.
 
-## Run with Docker Compose
+Each transaction also captures the limits, blacklist flags, correlation
+counts, reasons, and rule version used during evaluation. Historical evidence
+is read from that immutable snapshot and is never recomputed against newer
+limits or blacklists.
 
-Requirements:
+## Feedback and concurrency
 
-- Docker Desktop or another Docker Engine with Compose support
+Support users can submit one feedback decision for a stored transaction. The
+original decision remains unchanged; valid feedback adjusts thresholds used by
+future transactions.
 
-Create the local environment file:
+| Original decision | Feedback | Threshold change |
+|---|---|---|
+| `ALLOWED` | `MANUAL_PROCESSING` | Decrease allowed limit |
+| `ALLOWED` | `PROHIBITED` | Decrease allowed and manual limits |
+| `MANUAL_PROCESSING` | `ALLOWED` | Increase allowed limit |
+| `MANUAL_PROCESSING` | `PROHIBITED` | Decrease manual limit |
+| `PROHIBITED` | `ALLOWED` | Increase allowed and manual limits |
+| `PROHIBITED` | `MANUAL_PROCESSING` | Increase manual limit |
 
-```powershell
-Copy-Item .env.example .env
-```
+Feedback identical to the original decision receives `422 Unprocessable
+Content`. Repeated feedback receives `409 Conflict`.
 
-Build and start the API and PostgreSQL:
-
-```powershell
-docker compose up --build
-```
-
-Available endpoints:
-
-- API: `http://localhost:8080`
-- Swagger UI: `http://localhost:8080/swagger-ui.html`
-- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
-- Health: `http://localhost:8080/actuator/health`
-
-The PostgreSQL volume preserves users, transactions, feedback, and adaptive
-limits across container restarts.
-
-## Run from IntelliJ IDEA
-
-Requirements:
-
-- Java 25
-- PostgreSQL 18
-- An empty PostgreSQL database, for example `antifraud`
-
-Set these environment variables in the application run configuration:
+Threshold changes use exact decimal arithmetic and ceiling rounding:
 
 ```text
-SPRING_PROFILES_ACTIVE=local
-DB_URL=jdbc:postgresql://localhost:5433/antifraud
-DB_USERNAME=your_application_user
-DB_PASSWORD=your_application_password
+increase = ceil(0.8 * currentLimit + 0.2 * transactionAmount)
+decrease = ceil(0.8 * currentLimit - 0.2 * transactionAmount)
 ```
 
-Use the port configured by your PostgreSQL server. Flyway automatically creates
-and upgrades the schema when the application starts.
+```mermaid
+sequenceDiagram
+    participant Support
+    participant Feedback as Feedback service
+    participant Transaction as Transaction row
+    participant Limits as Shared limits row
+    participant Audit as Audit events
 
-The application listens on port `8080` by default.
-
-## Production configuration
-
-Activate the production profile and supply credentials through the deployment
-environment:
-
-```text
-SPRING_PROFILES_ACTIVE=prod
-DB_URL=jdbc:postgresql://database-host:5432/antifraud
-DB_USERNAME=deployment_user
-DB_PASSWORD=deployment_secret
-API_DOCS_ENABLED=false
+    Support->>Feedback: Submit transaction ID and correction
+    Feedback->>Transaction: SELECT ... FOR UPDATE
+    Feedback->>Feedback: Validate original and existing feedback
+    Feedback->>Limits: SELECT ... FOR UPDATE
+    Feedback->>Limits: Update affected thresholds
+    Feedback->>Transaction: Store one-time feedback
+    Feedback->>Audit: Append feedback and limit events
+    Feedback-->>Support: Updated transaction record
 ```
 
-The production profile has no fallback database credentials, disables Flyway
-clean operations, honors reverse-proxy forwarding headers, and prevents default
-error pages from exposing messages or stack traces.
+The transaction row lock enforces exactly-once feedback. The limits row lock
+serializes changes to shared thresholds. Feedback, threshold updates, and audit
+events commit or roll back together.
 
-Swagger UI and `/v3/api-docs` are disabled in production unless
-`API_DOCS_ENABLED=true` is explicitly provided. The health endpoint remains
-available without exposing component details.
+## Investigation and operations
 
-The portfolio Render deployment explicitly enables API documentation so the
-root service URL can open Swagger UI. Authentication and role authorization
-remain enforced on protected operations.
+Support and administrator workflows expose stored facts without leaking full
+card identifiers through the newer investigation APIs.
 
-The repository includes a Render Blueprint for the Dockerized API. Follow the
-[Render and Neon deployment guide](docs/DEPLOYMENT.md) to create the database,
-provide secrets, deploy, and verify the public service.
+| Capability | Endpoint | Safety property |
+|---|---|---|
+| Transaction search | `GET /api/v2/antifraud/transactions` | Bounded pages, allow-listed sorting, masked card references |
+| Decision inspection | `GET /api/v2/antifraud/transactions/{id}/decision` | Stored evidence without card or IP data |
+| Audit trail | `GET /api/antifraud/audit` | Actor-attributed, append-only operational history |
+| Operational metrics | `GET /api/v2/antifraud/metrics` | Date-bounded aggregates without card or IP data |
 
-## Synthetic demo workflow
+Audit history is separate from transaction history. Transactions record payment
+attempts; audit events record who changed operational state, including
+blacklists, feedback, and limits.
 
-Swagger UI provides an **Authorize** button for HTTP Basic credentials.
+## Try the fraud workflow
 
-1. Register the first user through `POST /api/auth/user`. This user becomes the
-   administrator.
-2. Register merchant and support accounts through the same public endpoint.
-3. Authenticate as the administrator, assign `SUPPORT` where required through
-   `PUT /api/auth/role`, and unlock both accounts through
-   `PUT /api/auth/access`.
-4. Authenticate as the merchant and submit a transaction:
+Use a fresh local database for this deterministic walkthrough.
+
+1. Register three accounts with `POST /api/auth/user`. The first becomes the
+   enabled administrator; the others start as locked merchants.
+2. Authenticate as the administrator, assign one account the `SUPPORT` role,
+   and unlock the merchant and support accounts.
+3. Authenticate as the merchant and submit an amount of `800`. With the initial
+   limits, the result is `MANUAL_PROCESSING` with reason `amount`.
+4. Submit low-value transactions for the same card from successive IPs within
+   one hour. The third distinct IP produces manual review; the fourth produces
+   prohibition through `ip-correlation`.
+5. Authenticate as support and inspect the stored decision evidence.
+6. Submit `ALLOWED` feedback for the amount-based manual decision. The allowed
+   threshold changes from `200` to `320`.
+7. Inspect the audit trail and operational metrics to see the feedback event,
+   limit update, decision distribution, and review workload.
+
+Example merchant request:
 
 ```json
 {
   "amount": 800,
-  "ip": "192.168.1.1",
+  "ip": "192.168.1.10",
   "number": "4000008449433403",
   "region": "EAP",
   "date": "2026-10-20T12:00:00"
 }
 ```
 
-The initial response is:
+The card number above is a synthetic Luhn-valid test identifier.
 
-```json
-{
-  "result": "MANUAL_PROCESSING",
-  "info": "amount"
-}
-```
+## Security and roles
 
-5. Authenticate as support to inspect history, manage fraud blacklists, or
-   submit feedback:
+| Role | Main responsibilities |
+|---|---|
+| `ADMINISTRATOR` | Manage users, roles, and account access; read metrics and audit events |
+| `MERCHANT` | Submit transactions for fraud evaluation |
+| `SUPPORT` | Maintain blacklists, review history, inspect decisions, and submit feedback |
 
-```json
-{
-  "transactionId": 1,
-  "feedback": "ALLOWED"
-}
-```
+Passwords are stored as BCrypt hashes. Spring Security distinguishes missing or
+invalid authentication (`401`) from an authenticated caller without the
+required role (`403`). The application intentionally retains stateless HTTP
+Basic authentication because it suits the current backend and Swagger workflow.
 
-Feedback can be submitted once. A valid correction updates the affected amount
-thresholds in the same database transaction as the feedback record.
-
-## API overview
+## API reference
 
 | Method | Endpoint | Access | Purpose |
 |---|---|---|---|
-| `POST` | `/api/auth/user` | Public | Register a user |
+| `POST` | `/api/auth/user` | Public | Register an account |
 | `GET` | `/api/auth/list` | Admin, Support | List users |
 | `DELETE` | `/api/auth/user/{username}` | Admin | Delete a user |
 | `PUT` | `/api/auth/role` | Admin | Change a user role |
@@ -227,92 +274,238 @@ thresholds in the same database transaction as the feedback record.
 | `POST` | `/api/antifraud/transaction` | Merchant | Evaluate and store a transaction |
 | `PUT` | `/api/antifraud/transaction` | Support | Submit one-time feedback |
 | `GET` | `/api/antifraud/history` | Support | Read all transaction history |
-| `GET` | `/api/antifraud/history/{number}` | Support | Read history for a card |
-| `GET` | `/api/v2/antifraud/transactions` | Support | Search masked transaction history with filters and pagination |
-| `GET` | `/api/v2/antifraud/transactions/{id}/decision` | Support | Inspect the evidence captured for the original decision |
-| `GET` | `/api/v2/antifraud/metrics` | Admin, Support | Aggregate decisions, review workload, regions, and active limits |
-| `GET` | `/api/antifraud/audit?limit=50` | Admin, Support | Read recent audit events |
+| `GET` | `/api/antifraud/history/{number}` | Support | Read history for one card |
+| `GET` | `/api/v2/antifraud/transactions` | Support | Search masked transaction history |
+| `GET` | `/api/v2/antifraud/transactions/{id}/decision` | Support | Inspect original decision evidence |
+| `GET` | `/api/v2/antifraud/metrics` | Admin, Support | Read aggregate operational metrics |
+| `GET` | `/api/antifraud/audit` | Admin, Support | Read recent audit events |
 | `POST` | `/api/antifraud/suspicious-ip` | Support | Add a suspicious IP |
 | `GET` | `/api/antifraud/suspicious-ip` | Support | List suspicious IPs |
 | `DELETE` | `/api/antifraud/suspicious-ip/{ip}` | Support | Remove a suspicious IP |
-| `POST` | `/api/antifraud/stolencard` | Support | Add a stolen card |
-| `GET` | `/api/antifraud/stolencard` | Support | List stolen cards |
-| `DELETE` | `/api/antifraud/stolencard/{number}` | Support | Remove a stolen card |
+| `POST` | `/api/antifraud/stolencard` | Support | Flag a synthetic card identifier |
+| `GET` | `/api/antifraud/stolencard` | Support | List flagged card identifiers |
+| `DELETE` | `/api/antifraud/stolencard/{number}` | Support | Remove a flagged card identifier |
 
-Common error responses use RFC 9457 Problem Details:
+Validation and domain errors use `application/problem+json` with stable status
+semantics:
 
 | Status | Meaning |
 |---:|---|
 | `400` | Malformed or invalid request |
 | `401` | Missing, invalid, or locked credentials |
-| `403` | Authenticated user lacks the required role |
+| `403` | Authenticated caller lacks the required role |
 | `404` | Resource not found |
 | `409` | Duplicate resource or repeated feedback |
 | `422` | Feedback matches the original decision |
 
+## Quick start
+
+The Docker Compose stack starts the API and PostgreSQL on a private network,
+waits for database readiness, applies Flyway migrations, and exposes both
+services only on the local interface.
+
+### Prerequisites
+
+- Git
+- Docker Desktop with Docker Compose
+
+### 1. Clone and configure
+
+```bash
+git clone https://github.com/adhambatlouni/anti-fraud-system.git
+cd anti-fraud-system
+```
+
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+macOS, Linux, or Git Bash:
+
+```bash
+cp .env.example .env
+```
+
+The defaults are intended only for local development. Change
+`POSTGRES_PASSWORD` before using the stack in a shared environment.
+
+### 2. Start the stack
+
+```bash
+docker compose up --build -d
+docker compose ps
+docker compose logs -f api
+```
+
+Once the application is healthy:
+
+- **Swagger UI:** [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+- **OpenAPI JSON:** [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+- **Health:** [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
+- **PostgreSQL:** `localhost:5432`, available for optional inspection
+
+### 3. Stop the stack
+
+```bash
+docker compose down
+```
+
+The named volume preserves users, transactions, feedback, limits, and audit
+events. To deliberately remove the Docker-managed data:
+
+```bash
+docker compose down --volumes
+```
+
 ## Database migrations
 
-Flyway owns the PostgreSQL schema. Spring's `schema.sql` initialization is
-disabled.
+Flyway owns schema evolution. Applied migrations are immutable; each schema
+change belongs in a new versioned file.
 
-| Migration | Purpose |
+| Migration | Change |
 |---|---|
-| `V1__create_user_and_fraud_schema.sql` | Users, authorities, blacklists, transaction history, and adaptive limits |
-| `V2__add_transaction_history_indexes.sql` | Correlation and card-history query indexes |
-| `V3__create_audit_events.sql` | Append-only actor-attributed fraud operations history |
-| `V4__add_transaction_search_indexes.sql` | Transaction search and filtering indexes |
-| `V5__add_transaction_decision_snapshots.sql` | Immutable limits, signals, reasons, and rule version used for each decision |
+| `V1__create_user_and_fraud_schema.sql` | Users, authorities, blacklists, transactions, and adaptive limits |
+| `V2__add_transaction_history_indexes.sql` | Correlation and card-history indexes |
+| `V3__create_audit_events.sql` | Append-only operational audit events |
+| `V4__add_transaction_search_indexes.sql` | Search and reporting indexes |
+| `V5__add_transaction_decision_snapshots.sql` | Immutable limits, signals, reasons, and rule version |
 
-Applied migrations should not be edited. Schema changes belong in a new
-versioned migration.
+PostgreSQL constraints and triggers protect the single limits row, valid fraud
+results, and immutable decision evidence. Transactional row locks enforce
+one-time feedback and serialize shared threshold updates.
 
-## Tests
+## Testing and CI
 
-Run the complete suite:
+Docker must be running because the integration suite starts disposable
+`postgres:18` containers.
 
-```powershell
-.\gradlew clean test
-```
-
-Docker must be running because integration tests start PostgreSQL 18 with
-Testcontainers.
-
-Build the executable application JAR:
+Windows:
 
 ```powershell
-.\gradlew bootJar
+.\gradlew.bat clean test
 ```
 
-The suite covers validators, decision precedence, feedback calculations,
-Flyway migrations, authorization, HTTP error contracts, PostgreSQL fraud
-queries, audit redaction, and concurrent feedback submissions.
+macOS or Linux:
+
+```bash
+./gradlew clean test
+```
+
+The suite covers:
+
+- IPv4, Luhn, date, region, and request validation;
+- amount rules, severity precedence, and sorted explanations;
+- same-card isolation and one-hour IP/region correlation boundaries;
+- feedback formulas, invalid transitions, exactly-once updates, and row locking;
+- concurrent first-user registration and administrator uniqueness;
+- authentication, locked accounts, role authorization, and error contracts;
+- Flyway migrations, audit redaction, transaction search, metrics, and decision snapshots.
+
+GitHub Actions runs `./gradlew clean check bootJar --no-daemon --stacktrace`
+for pull requests targeting `main` and pushes to `main`. The workflow uses Java
+25, caches Gradle dependencies, grants read-only repository access, and cancels
+superseded runs on the same ref.
+
+## Engineering decisions
+
+| Decision | Reason |
+|---|---|
+| **Spring JDBC instead of JPA** | Correlation, aggregation, row locking, and projection SQL remain explicit and reviewable |
+| **Concrete repositories with focused read services** | Reusable persistence is separated without creating interfaces that have no alternative implementation |
+| **Immutable decision snapshots** | Historical decisions stay explainable after limits and blacklists change |
+| **Pessimistic locking for feedback** | One-time feedback and shared threshold changes require serialization at the database boundary |
+| **Separate audit and transaction histories** | Payment attempts and operator actions have different meaning, access patterns, and retention concerns |
+| **HTTP Basic for the current API** | Stateless role authentication supports the backend and Swagger workflow without an unused token subsystem |
+| **Bounded pages and sort allow-list** | Investigation clients cannot request unbounded data or arbitrary SQL ordering |
+| **Synthetic identifiers and masked projections** | The portfolio demo limits exposure while making no PCI-compliance claim |
+| **PostgreSQL-backed integration tests** | Tests exercise the same locking, constraints, migrations, and SQL semantics used in deployment |
+| **Health-aware container startup** | The API waits for PostgreSQL readiness rather than relying on startup timing |
+
+The project evolved from the six-stage Hyperskill Anti-Fraud System. The
+portfolio version preserves the original fraud contract while adding explicit
+persistence boundaries, PostgreSQL, Flyway, concurrency coverage, explainable
+decisions, audit history, operational reads, containers, CI, and deployment.
+
+<details>
+<summary><strong>Run Spring Boot directly</strong></summary>
+
+### Local prerequisites
+
+- JDK 25
+- PostgreSQL 18
+- Docker Desktop when running integration tests
+
+Set the local database connection, then start the application:
+
+```powershell
+$env:SPRING_PROFILES_ACTIVE = "local"
+$env:DB_URL = "jdbc:postgresql://localhost:5432/antifraud"
+$env:DB_USERNAME = "antifraud"
+$env:DB_PASSWORD = "your-local-password"
+.\gradlew.bat bootRun
+```
+
+| Variable | Required | Default | Purpose |
+|---|---:|---|---|
+| `DB_URL` | No | `jdbc:postgresql://localhost:5432/antifraud` | JDBC connection URL |
+| `DB_USERNAME` | No | `antifraud` | PostgreSQL application role |
+| `DB_PASSWORD` | No | `antifraud` | Local PostgreSQL credential |
+| `PORT` | No | `8080` | HTTP port |
+| `DB_POOL_MAX_SIZE` | No | `5` | Maximum HikariCP pool size |
+| `API_DOCS_ENABLED` | Production only | `false` | Enables OpenAPI and Swagger UI |
+
+Flyway creates or upgrades the schema during startup. Spring Boot does not load
+`.env` automatically when launched directly; add the same values to the
+IntelliJ run configuration when using the IDE.
+
+</details>
+
+## Deployment
+
+The repository includes a Render Blueprint for the Dockerized API. Production
+uses environment-provided Neon credentials, disables Flyway clean operations,
+honors proxy forwarding headers, and suppresses error details and stack traces.
+
+See the [Render and Neon deployment guide](docs/DEPLOYMENT.md) for configuration
+and verification. The current portfolio release is
+[v2.1.0](https://github.com/adhambatlouni/anti-fraud-system/releases/tag/v2.1.0),
+and ongoing development uses version `2.2.0-SNAPSHOT`.
 
 ## Project structure
 
 ```text
-src/main/java/com/adham/antifraudsystem/
-├── config/       security, passwords, and OpenAPI
-├── controller/   REST endpoints
-├── dto/          validated request and response records
-├── exception/    centralized Problem Detail mapping
-├── model/        roles, regions, and fraud result types
-├── repository/   reusable JDBC persistence and row locking
-├── service/      business rules and workflow orchestration
-└── validation/   IPv4 and Luhn validation
+src/
+├── main/
+│   ├── java/com/adham/antifraudsystem/
+│   │   ├── config/       # security, passwords, and OpenAPI
+│   │   ├── controller/   # REST endpoints
+│   │   ├── dto/          # validated API records grouped by area
+│   │   ├── exception/    # Problem Details mapping
+│   │   ├── model/        # roles, regions, and fraud results
+│   │   ├── repository/   # reusable JDBC persistence and row locking
+│   │   ├── service/      # workflows, decisions, feedback, and read models
+│   │   └── validation/   # IPv4 and Luhn rules
+│   └── resources/
+│       ├── application*.properties
+│       └── db/migration/ # versioned PostgreSQL schema
+└── test/                 # unit and container-backed integration tests
 
-src/main/resources/
-├── application.properties
-└── db/migration/
+.github/workflows/ci.yml  # pull-request and main verification
+compose.yaml              # API and PostgreSQL development stack
+Dockerfile                # multi-stage Java 25 image
+render.yaml               # Render web-service definition
+docs/ARCHITECTURE.md      # workflows and code-reading guide
+docs/DEPLOYMENT.md        # Render and Neon deployment guide
+.env.example              # local configuration template
 ```
 
-## Current scope
+---
 
-The [v2.1.0 portfolio release](https://github.com/adhambatlouni/anti-fraud-system/releases/tag/v2.1.0)
-includes PostgreSQL 18, Flyway, database-backed tests, concurrency coverage,
-Docker Compose, CI, structured errors, OpenAPI documentation, append-only audit
-events, bounded transaction search, operational metrics, immutable decision
-evidence, and a verified Render and Neon deployment.
+<!--suppress HtmlDeprecatedAttribute -->
+<div align="center">
 
-An optional monitoring dashboard may be added later. JWT and JPA are not
-required by the current API or domain model and will only be introduced when a
-concrete product requirement justifies them.
+Built by **[Adham Batlouni](https://github.com/adhambatlouni)**
+
+</div>
