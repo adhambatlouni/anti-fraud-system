@@ -3,9 +3,9 @@ package com.adham.antifraudsystem.service;
 import com.adham.antifraudsystem.dto.BlacklistDtos.DeletionResponse;
 import com.adham.antifraudsystem.dto.BlacklistDtos.SuspiciousIpRequest;
 import com.adham.antifraudsystem.dto.BlacklistDtos.SuspiciousIpResponse;
+import com.adham.antifraudsystem.repository.BlacklistRepository;
 import com.adham.antifraudsystem.validation.IpValidator;
 
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,14 +19,14 @@ import static com.adham.antifraudsystem.service.AuditService.ResourceType.SUSPIC
 @Service
 public class SuspiciousIpService {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final BlacklistRepository blacklistRepository;
     private final AuditService auditService;
 
     public SuspiciousIpService(
-            JdbcTemplate jdbcTemplate,
+            BlacklistRepository blacklistRepository,
             AuditService auditService) {
 
-        this.jdbcTemplate = jdbcTemplate;
+        this.blacklistRepository = blacklistRepository;
         this.auditService = auditService;
     }
 
@@ -41,16 +41,7 @@ public class SuspiciousIpService {
 
         String ip = request.ip();
 
-        jdbcTemplate.update(
-                "INSERT INTO suspicious_ips (ip) VALUES (?)",
-                ip
-        );
-
-        Long id = jdbcTemplate.queryForObject(
-                "SELECT id FROM suspicious_ips WHERE ip = ?",
-                Long.class,
-                ip
-        );
+        long id = blacklistRepository.addIp(ip);
 
         auditService.record(
                 actorUsername,
@@ -66,13 +57,12 @@ public class SuspiciousIpService {
 
     public List<SuspiciousIpResponse> getAllIps() {
 
-        return jdbcTemplate.query(
-                "SELECT id, ip FROM suspicious_ips ORDER BY id ASC",
-                (rs, rowNum) -> new SuspiciousIpResponse(
-                        rs.getLong("id"),
-                        rs.getString("ip")
-                )
-        );
+        return blacklistRepository.findAllIps().stream()
+                .map(entry -> new SuspiciousIpResponse(
+                        entry.id(),
+                        entry.ip()
+                ))
+                .toList();
     }
 
     @Transactional
@@ -82,10 +72,7 @@ public class SuspiciousIpService {
             throw new IllegalArgumentException("Invalid IP address");
         }
 
-        int deletedRows = jdbcTemplate.update(
-                "DELETE FROM suspicious_ips WHERE ip = ?",
-                ip
-        );
+        int deletedRows = blacklistRepository.deleteIp(ip);
 
         if (deletedRows == 0) {
             throw new NoSuchElementException("IP address not found");
@@ -104,4 +91,5 @@ public class SuspiciousIpService {
                 "IP " + ip + " successfully removed!"
         );
     }
+
 }

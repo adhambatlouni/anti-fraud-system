@@ -296,7 +296,8 @@ src/main/java/com/adham/antifraudsystem/
 ├── dto/          validated request and response records
 ├── exception/    centralized Problem Detail mapping
 ├── model/        roles, regions, and fraud result types
-├── service/      business rules and JDBC persistence
+├── repository/   reusable JDBC persistence and row locking
+├── service/      business rules and workflow orchestration
 └── validation/   IPv4 and Luhn validation
 
 src/main/resources/

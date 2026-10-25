@@ -3,9 +3,9 @@ package com.adham.antifraudsystem.service;
 import com.adham.antifraudsystem.dto.BlacklistDtos.DeletionResponse;
 import com.adham.antifraudsystem.dto.BlacklistDtos.StolenCardRequest;
 import com.adham.antifraudsystem.dto.BlacklistDtos.StolenCardResponse;
+import com.adham.antifraudsystem.repository.BlacklistRepository;
 import com.adham.antifraudsystem.validation.CardValidator;
 
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,14 +19,14 @@ import static com.adham.antifraudsystem.service.AuditService.ResourceType.STOLEN
 @Service
 public class StolenCardService {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final BlacklistRepository blacklistRepository;
     private final AuditService auditService;
 
     public StolenCardService(
-            JdbcTemplate jdbcTemplate,
+            BlacklistRepository blacklistRepository,
             AuditService auditService) {
 
-        this.jdbcTemplate = jdbcTemplate;
+        this.blacklistRepository = blacklistRepository;
         this.auditService = auditService;
     }
 
@@ -41,16 +41,7 @@ public class StolenCardService {
 
         String number = request.number();
 
-        jdbcTemplate.update(
-                "INSERT INTO stolen_cards (number) VALUES (?)",
-                number
-        );
-
-        Long id = jdbcTemplate.queryForObject(
-                "SELECT id FROM stolen_cards WHERE number = ?",
-                Long.class,
-                number
-        );
+        long id = blacklistRepository.addCard(number);
 
         auditService.record(
                 actorUsername,
@@ -66,13 +57,12 @@ public class StolenCardService {
 
     public List<StolenCardResponse> getAllCards() {
 
-        return jdbcTemplate.query(
-                "SELECT id, number FROM stolen_cards ORDER BY id ASC",
-                (rs, rowNum) -> new StolenCardResponse(
-                        rs.getLong("id"),
-                        rs.getString("number")
-                )
-        );
+        return blacklistRepository.findAllCards().stream()
+                .map(entry -> new StolenCardResponse(
+                        entry.id(),
+                        entry.number()
+                ))
+                .toList();
     }
 
     @Transactional
@@ -84,10 +74,7 @@ public class StolenCardService {
             throw new IllegalArgumentException("Invalid card number");
         }
 
-        int deletedRows = jdbcTemplate.update(
-                "DELETE FROM stolen_cards WHERE number = ?",
-                number
-        );
+        int deletedRows = blacklistRepository.deleteCard(number);
 
         if (deletedRows == 0) {
             throw new NoSuchElementException("Card not found");
@@ -106,4 +93,5 @@ public class StolenCardService {
                 "Card " + number + " successfully removed!"
         );
     }
+
 }
