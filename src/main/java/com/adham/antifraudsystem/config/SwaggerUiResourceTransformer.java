@@ -52,8 +52,16 @@ public class SwaggerUiResourceTransformer
             }
 
             %1$s .opblock-description-wrapper p {
-                font-size: 18px;
+                font-size: 16px;
                 line-height: 1.5;
+            }
+
+            #operations-tag-Investigation small {
+                font-size: 16px;
+            }
+
+            %1$s .opblock-summary-description {
+                font-size: 15px;
             }
 
             %1$s .responses-table {
