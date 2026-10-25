@@ -3,10 +3,10 @@ package com.adham.antifraudsystem.service;
 import com.adham.antifraudsystem.dto.TransactionDtos.TransactionRequest;
 import com.adham.antifraudsystem.dto.TransactionDtos.TransactionResponse;
 import com.adham.antifraudsystem.model.Region;
+import com.adham.antifraudsystem.repository.BlacklistRepository;
 import com.adham.antifraudsystem.validation.CardValidator;
 import com.adham.antifraudsystem.validation.IpValidator;
 
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,21 +22,21 @@ public class TransactionService {
             DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss")
                     .withResolverStyle(ResolverStyle.STRICT);
 
-    private final JdbcTemplate jdbcTemplate;
     private final TransactionHistoryService transactionHistoryService;
     private final FraudLimitService fraudLimitService;
     private final FraudDecisionEngine decisionEngine;
+    private final BlacklistRepository blacklistRepository;
 
     public TransactionService(
-            JdbcTemplate jdbcTemplate,
             TransactionHistoryService transactionHistoryService,
             FraudLimitService fraudLimitService,
-            FraudDecisionEngine decisionEngine) {
+            FraudDecisionEngine decisionEngine,
+            BlacklistRepository blacklistRepository) {
 
-        this.jdbcTemplate = jdbcTemplate;
         this.transactionHistoryService = transactionHistoryService;
         this.fraudLimitService = fraudLimitService;
         this.decisionEngine = decisionEngine;
+        this.blacklistRepository = blacklistRepository;
     }
 
     @Transactional
@@ -86,21 +86,12 @@ public class TransactionService {
         long maxAllowed = limits.maxAllowed();
         long maxManual = limits.maxManual();
 
-        Long ipCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM suspicious_ips WHERE ip = ?",
-                Long.class,
+        boolean suspiciousIp = blacklistRepository.containsIp(
                 request.ip()
         );
-
-        boolean suspiciousIp = ipCount != null && ipCount > 0;
-
-        Long cardCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM stolen_cards WHERE number = ?",
-                Long.class,
+        boolean stolenCard = blacklistRepository.containsCard(
                 request.number()
         );
-
-        boolean stolenCard = cardCount != null && cardCount > 0;
 
         long differentIpCount =
                 transactionHistoryService.countDifferentIps(

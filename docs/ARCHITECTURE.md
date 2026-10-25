@@ -27,7 +27,8 @@ flowchart LR
     Controller --> Validation[DTO and domain validation]
     Validation --> Service[Business service]
     Service --> Engine[Fraud decision engine]
-    Service --> JDBC[JdbcTemplate SQL]
+    Service --> Repository[JDBC repository]
+    Repository --> JDBC[JdbcTemplate SQL]
     JDBC --> PostgreSQL[(PostgreSQL)]
     Flyway[Flyway migrations] --> PostgreSQL
 ```
@@ -41,12 +42,19 @@ The packages have conventional responsibilities:
 | `dto` | API request and response records grouped by area |
 | `exception` | Consistent Problem Detail error responses |
 | `model` | Small domain enums such as role, region, and result |
-| `service` | Fraud rules, transactions, feedback, and JDBC queries |
+| `repository` | Reusable JDBC persistence, row locking, and database mapping |
+| `service` | Business rules, transaction orchestration, and focused read models |
 | `validation` | Algorithmic IPv4 and Luhn validation |
 
 Services are kept separate because evaluation, feedback, audit, search, and
 reporting change for different business reasons. Combining them would create
 one large class with unrelated SQL and rules.
+
+Command workflows delegate reusable user, blacklist, and transaction storage
+to concrete JDBC repositories. Search, decision inspection, and metrics remain
+focused read services because their SQL directly defines their API projections.
+Interfaces are introduced only when a real alternative implementation or test
+boundary exists; the project does not create one interface per class.
 
 ## Workflow 1: transaction evaluation
 
