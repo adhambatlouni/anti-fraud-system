@@ -142,6 +142,9 @@ class ApiContractIntegrationTest {
                 )))
                 .andExpect(content().string(containsString(
                         "font-size: 14px"
+                )))
+                .andExpect(content().string(containsString(
+                        ".opblock-description-wrapper p"
                 )));
     }
 

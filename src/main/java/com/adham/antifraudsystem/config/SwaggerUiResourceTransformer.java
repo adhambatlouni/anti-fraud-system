@@ -51,6 +51,11 @@ public class SwaggerUiResourceTransformer
                 margin-right: 20px;
             }
 
+            %1$s .opblock-description-wrapper p {
+                font-size: 14px;
+                line-height: 1.5;
+            }
+
             %1$s .responses-table {
                 margin-bottom: 20px;
             }
