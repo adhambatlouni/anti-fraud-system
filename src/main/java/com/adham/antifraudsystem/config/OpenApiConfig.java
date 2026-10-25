@@ -7,6 +7,12 @@ import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.tags.Tag;
+import org.springdoc.core.properties.SwaggerUiConfigProperties;
+import org.springdoc.core.properties.SwaggerUiOAuthProperties;
+import org.springdoc.core.providers.ObjectMapperProvider;
+import org.springdoc.webmvc.ui.SwaggerIndexTransformer;
+import org.springdoc.webmvc.ui.SwaggerWelcomeCommon;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -86,5 +92,25 @@ public class OpenApiConfig {
                 .externalDocs(new ExternalDocumentation()
                         .description("Architecture and design decisions")
                         .url("https://github.com/adhambatlouni/anti-fraud-system/blob/main/docs/ARCHITECTURE.md"));
+    }
+
+    @Bean
+    @ConditionalOnProperty(
+            name = "springdoc.swagger-ui.enabled",
+            havingValue = "true",
+            matchIfMissing = true
+    )
+    public SwaggerIndexTransformer customSwaggerIndexTransformer(
+            SwaggerUiConfigProperties swaggerUiConfig,
+            SwaggerUiOAuthProperties swaggerUiOAuth,
+            SwaggerWelcomeCommon swaggerWelcome,
+            ObjectMapperProvider objectMapperProvider) {
+
+        return new SwaggerUiResourceTransformer(
+                swaggerUiConfig,
+                swaggerUiOAuth,
+                swaggerWelcome,
+                objectMapperProvider
+        );
     }
 }
