@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.adham'
-version = '0.0.1-SNAPSHOT'
+version = '2.2.0-SNAPSHOT'
 description = 'anti-fraud-system'
 
 java {

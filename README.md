@@ -1,13 +1,14 @@
 # Anti-Fraud System
 
 [![CI](https://github.com/adhambatlouni/anti-fraud-system/actions/workflows/ci.yml/badge.svg)](https://github.com/adhambatlouni/anti-fraud-system/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/adhambatlouni/anti-fraud-system)](https://github.com/adhambatlouni/anti-fraud-system/releases/latest)
 
 A rule-based Spring Boot API that evaluates payment risk, maintains fraud
 blacklists, records transaction history, and adjusts amount thresholds from
 specialist feedback.
 
-The project began as the six-stage Hyperskill Anti-Fraud System and is being
-modernized as a production-oriented backend portfolio project. It keeps
+The project began as the six-stage Hyperskill Anti-Fraud System and has been
+rebuilt as a deployed, production-oriented backend portfolio project. It keeps
 explicit SQL and `JdbcTemplate` instead of replacing the persistence layer with
 JPA.
 
@@ -305,10 +306,12 @@ src/main/resources/
 
 ## Current scope
 
-Implemented portfolio upgrades include PostgreSQL 18, Flyway, database-backed
-tests, concurrency coverage, Docker Compose, CI, structured errors, OpenAPI
-documentation, append-only audit events, bounded transaction search,
-operational metrics, and immutable transaction decision inspection.
+The [v2.1.0 portfolio release](https://github.com/adhambatlouni/anti-fraud-system/releases/tag/v2.1.0)
+includes PostgreSQL 18, Flyway, database-backed tests, concurrency coverage,
+Docker Compose, CI, structured errors, OpenAPI documentation, append-only audit
+events, bounded transaction search, operational metrics, immutable decision
+evidence, and a verified Render and Neon deployment.
 
-Planned work includes a safe cloud demonstration and an optional monitoring
-dashboard. JWT and JPA are not required for the current architecture.
+An optional monitoring dashboard may be added later. JWT and JPA are not
+required by the current API or domain model and will only be introduced when a
+concrete product requirement justifies them.
