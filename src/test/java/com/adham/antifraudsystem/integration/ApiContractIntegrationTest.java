@@ -121,9 +121,13 @@ class ApiContractIntegrationTest {
                         "$['paths']['/api/v2/antifraud/transactions/{transactionId}/decision']"
                                 + "['get']['responses']['200']['content']"
                                 + "['application/json']['examples']"
-                                + "['Correlation-based prohibition']['value']"
+                                + "['Amount-based manual review']['value']"
                                 + "['reasons'][0]"
-                ).value("ip-correlation"));
+                ).value("amount"))
+                .andExpect(jsonPath(
+                        "$['paths']['/api/v2/antifraud/transactions/{transactionId}/decision']"
+                                + "['get']['responses']['200']['description']"
+                ).value("Response body"));
 
         mockMvc.perform(get("/swagger-ui.html"))
                 .andExpect(status().is3xxRedirection());

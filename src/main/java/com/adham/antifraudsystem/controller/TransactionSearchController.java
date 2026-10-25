@@ -124,31 +124,31 @@ public class TransactionSearchController {
     )
     @ApiResponse(
             responseCode = "200",
-            description = "OK",
+            description = "Response body",
             content = @Content(
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                     schema = @Schema(
                             implementation = TransactionDecisionResponse.class
                     ),
                     examples = @ExampleObject(
-                            name = "Correlation-based prohibition",
+                            name = "Amount-based manual review",
                             value = """
                                     {
-                                      "transactionId": 6,
-                                      "amount": 100,
-                                      "result": "PROHIBITED",
+                                      "transactionId": 7,
+                                      "amount": 800,
+                                      "result": "MANUAL_PROCESSING",
                                       "evidenceAvailable": true,
                                       "reasons": [
-                                        "ip-correlation"
+                                        "amount"
                                       ],
                                       "appliedLimits": {
-                                        "maxAllowed": 200,
+                                        "maxAllowed": 320,
                                         "maxManual": 1500
                                       },
                                       "signals": {
                                         "suspiciousIp": false,
                                         "stolenCard": false,
-                                        "differentIpCount": 3,
+                                        "differentIpCount": 0,
                                         "differentRegionCount": 0
                                       },
                                       "ruleVersion": "1.0"
@@ -158,7 +158,7 @@ public class TransactionSearchController {
             )
     )
     public TransactionDecisionResponse getDecision(
-            @Parameter(description = "Stored transaction ID", example = "6")
+            @Parameter(description = "Stored transaction ID", example = "7")
             @PathVariable long transactionId) {
 
         return transactionDecisionService.getDecision(transactionId);
