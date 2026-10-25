@@ -52,7 +52,7 @@ public class SwaggerUiResourceTransformer
             }
 
             %1$s .opblock-description-wrapper p {
-                font-size: 14px;
+                font-size: 18px;
                 line-height: 1.5;
             }
 
