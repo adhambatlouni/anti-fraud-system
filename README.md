@@ -23,8 +23,7 @@ workflows, transaction boundaries, and recommended code-reading order.
 
 The production API is deployed on Render:
 
-- [Live Swagger UI](https://anti-fraud-system.onrender.com/swagger-ui/index.html)
-- [Service root](https://anti-fraud-system.onrender.com)
+- [Live API and Swagger UI](https://anti-fraud-system.onrender.com/)
 - [Health check](https://anti-fraud-system.onrender.com/actuator/health)
 
 The free Render instance can take approximately one minute to wake after a
