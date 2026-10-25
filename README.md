@@ -21,14 +21,15 @@ workflows, transaction boundaries, and recommended code-reading order.
 
 ## Live demo
 
-The production API is deployed at
-[anti-fraud-system.onrender.com](https://anti-fraud-system.onrender.com).
-Its public health endpoint is available at
-[`/actuator/health`](https://anti-fraud-system.onrender.com/actuator/health).
+The production API is deployed on Render:
+
+- [Live Swagger UI](https://anti-fraud-system.onrender.com/swagger-ui/index.html)
+- [Service root](https://anti-fraud-system.onrender.com)
+- [Health check](https://anti-fraud-system.onrender.com/actuator/health)
 
 The free Render instance can take approximately one minute to wake after a
-period of inactivity. The root URL opens the production Swagger UI, and the
-API must be used with synthetic card identifiers only.
+period of inactivity. The API must be used with synthetic card identifiers
+only.
 
 ## What it demonstrates
 
